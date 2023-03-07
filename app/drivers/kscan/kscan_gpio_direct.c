@@ -14,6 +14,10 @@
 #include <logging/log.h>
 #include <sys/util.h>
 
+int32_t x_count = 0;
+int32_t x_sum = 0;
+int32_t x_timer_start = 0;
+
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define DT_DRV_COMPAT zmk_kscan_gpio_direct
@@ -116,6 +120,7 @@ static void kscan_direct_irq_callback_handler(const struct device *port, struct 
         CONTAINER_OF(cb, struct kscan_direct_irq_callback, callback);
     struct kscan_direct_data *data = irq_data->dev->data;
 
+    x_timer_start = k_cycle_get_32();
     // Disable our interrupts temporarily to avoid re-entry while we scan.
     kscan_direct_interrupt_disable(data->dev);
 
@@ -199,6 +204,13 @@ static int kscan_direct_read(const struct device *dev) {
 
             LOG_DBG("Sending event at 0,%i state %s", i, pressed ? "on" : "off");
             data->callback(dev, 0, i, pressed);
+            if (pressed && x_timer_start != 0) {
+                x_sum += k_cycle_get_32() - x_timer_start;
+                x_count += 1;
+                x_timer_start = 0;
+                LOG_DBG("Presses %i, avg time to pressed %i", x_count, x_sum / x_count);
+            }
+
             if (config->toggle_mode && pressed) {
                 kscan_inputs_set_flags(&config->inputs, &config->inputs.gpios[i]);
             }

@@ -15,6 +15,10 @@
 #include <sys/__assert.h>
 #include <sys/util.h>
 
+int32_t x_count = 0;
+int32_t x_sum = 0;
+int32_t x_timer_start = 0;
+
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define DT_DRV_COMPAT zmk_kscan_gpio_round_robin
@@ -195,6 +199,7 @@ static void kscan_round_robin_irq_callback(const struct device *port, struct gpi
     struct kscan_round_robin_data *data =
         CONTAINER_OF(cb, struct kscan_round_robin_data, irq_callback);
 
+    x_timer_start = k_cycle_get_32();
     // Disable our interrupt to avoid re-entry while we scan.
     kscan_round_robin_interrupt_configure(data->dev, GPIO_INT_DISABLE);
     data->scan_time = k_uptime_get();
@@ -265,6 +270,13 @@ static int kscan_round_robin_read(const struct device *dev) {
             // setup, we can update in the same loop.
             if (debounce_get_changed(state)) {
                 const bool pressed = debounce_is_pressed(state);
+
+                if (pressed && x_timer_start != 0) {
+                    x_sum += k_cycle_get_32() - x_timer_start;
+                    x_count += 1;
+                    x_timer_start = 0;
+                    LOG_DBG("Presses %i, avg time to pressed %i", x_count, x_sum / x_count);
+                }
 
                 LOG_DBG("Sending event at %i,%i state %s", row, col, pressed ? "on" : "off");
                 data->callback(dev, row, col, pressed);

@@ -1,0 +1,8 @@
+file_format: "1"
+id: diff_direct
+name: DIFF_DIRECT
+type: shield
+url: https://kbd.dailycraft.jp/bat43/
+requires: [pro_micro]
+features:
+  - keys
