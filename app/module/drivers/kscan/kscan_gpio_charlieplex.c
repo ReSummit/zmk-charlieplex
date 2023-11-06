@@ -110,7 +110,11 @@ static int kscan_charlieplex_set_as_input(const struct gpio_dt_spec *gpio) {
         return -ENODEV;
     }
 
-    int err = gpio_pin_configure_dt(gpio, GPIO_INPUT);
+    struct gpio_dt_spec temp;
+    temp.port = gpio->port;
+    temp.pin = gpio->pin;
+    temp.dt_flags = GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN;
+    int err = gpio_pin_configure_dt(&temp, GPIO_INPUT);
     if (err) {
         LOG_ERR("Unable to configure pin %u on %s for input", gpio->pin, gpio->port->name);
         return err;
@@ -124,7 +128,11 @@ static int kscan_charlieplex_set_as_output(const struct gpio_dt_spec *gpio) {
         return -ENODEV;
     }
 
-    int err = gpio_pin_configure_dt(gpio, GPIO_OUTPUT);
+    struct gpio_dt_spec temp;
+    temp.port = gpio->port;
+    temp.pin = gpio->pin;
+    temp.dt_flags = GPIO_ACTIVE_HIGH;
+    int err = gpio_pin_configure_dt(&temp, GPIO_OUTPUT);
     if (err) {
         LOG_ERR("Unable to configure pin %u on %s for output", gpio->pin, gpio->port->name);
         return err;
